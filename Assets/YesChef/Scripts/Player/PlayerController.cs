@@ -1,15 +1,18 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+namespace YesChef.Player
+{
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
     {
-        [Header("Movement Settings")]
-        [SerializeField] private float moveSpeed = 7f;
+        [Header("Movement Settings")] [SerializeField]
+        private float moveSpeed = 7f;
+
         [SerializeField] private float rotationSpeed = 15f;
 
-        [Header("Input Actions")]
-        [SerializeField] private InputActionReference moveAction;
+        [Header("Input Actions")] [SerializeField]
+        private InputActionReference moveAction;
 
         private CharacterController characterController;
         private Vector3 movementVector;
@@ -17,6 +20,11 @@ using UnityEngine.InputSystem;
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+        }
+
+        private void Update()
+        {
+            HandleMovement();
         }
 
         private void OnEnable()
@@ -29,15 +37,10 @@ using UnityEngine.InputSystem;
             moveAction.action.Disable();
         }
 
-        private void Update()
-        {
-            HandleMovement();
-        }
-
         private void HandleMovement()
         {
             // Read input from Unity's modern Input System
-            Vector2 input = moveAction.action.ReadValue<Vector2>();
+            var input = moveAction.action.ReadValue<Vector2>();
             movementVector = new Vector3(input.x, 0f, input.y).normalized;
 
             // Apply movement
@@ -46,10 +49,10 @@ using UnityEngine.InputSystem;
             // Handle Rotation to face movement direction
             if (movementVector != Vector3.zero)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(movementVector);
+                var targetRotation = Quaternion.LookRotation(movementVector);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
             }
-            
+
             // Keep player grounded simply
             if (!characterController.isGrounded)
             {
@@ -57,3 +60,4 @@ using UnityEngine.InputSystem;
             }
         }
     }
+}

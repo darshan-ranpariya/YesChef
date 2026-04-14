@@ -4,9 +4,6 @@ using YesChef.Core;
 
 namespace YesChef.Player
 {
-    /// <summary>
-    ///     Handles the player picking up, dropping, and interacting with stations.
-    /// </summary>
     public class PlayerInteractor : MonoBehaviour
     {
         [Header("Interaction Settings")] [SerializeField]

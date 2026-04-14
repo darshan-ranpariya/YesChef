@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Text;
+using TMPro;
 using YesChef.Core;
 using YesChef.Data;
 using YesChef.Player;
@@ -8,19 +10,40 @@ namespace YesChef.Stations
 {
     public class CustomerWindow : MonoBehaviour, IInteractable
     {
+        [Header("World UI References")] [SerializeField]
+        private TextMeshProUGUI orderListText;
+
+        [SerializeField] private TextMeshProUGUI orderTimerText;
+        [SerializeField] private TextMeshProUGUI scorePopupText;
+
         public bool HasActiveOrder { get; private set; }
         public float TimeActive { get; private set; }
 
-        // We use a List so we can easily remove ingredients as the player hands them in
         public List<IngredientData> RequiredIngredients { get; private set; } = new();
 
         private int totalBaseScore;
+        private Vector3 defaultPopupLocalPos;
+        private float _scoreDuration = 4f;
+
+        private void Start()
+        {
+            if (scorePopupText != null)
+            {
+                defaultPopupLocalPos = scorePopupText.transform.localPosition;
+                scorePopupText.text = "";
+                scorePopupText.gameObject.SetActive(false);
+            }
+
+            orderListText.text = "Waiting for order...";
+            orderTimerText.text = "";
+        }
 
         private void Update()
         {
             if (HasActiveOrder)
             {
                 TimeActive += Time.deltaTime;
+                orderTimerText.text = $"{Mathf.FloorToInt(TimeActive)}s";
             }
         }
 
@@ -36,7 +59,8 @@ namespace YesChef.Stations
                 totalBaseScore += item.baseScore;
             }
 
-            Debug.Log($"New Order Started! Requires {newOrder.Count} items.");
+            UpdateOrderUI();
+            Debug.Log($"New Order Requires {newOrder.Count}");
         }
 
         public bool TryInteract(PlayerInteractor player)
@@ -49,23 +73,19 @@ namespace YesChef.Stations
             var heldData = player.HeldIngredient.Data;
             var heldState = player.HeldIngredient.CurrentState;
 
-            // 1. Check if the ingredient needs to be prepped but isn't
             if (heldData.requiresPrep && heldState != IngredientState.Prepped)
             {
-                Debug.Log($"{heldData.ingredientName} needs to be prepared first!");
+                Debug.Log($"prepere {heldData.ingredientName}");
                 return false;
             }
 
-            // 2. Check if the window actually needs this ingredient
             if (RequiredIngredients.Contains(heldData))
             {
-                // Take the item, destroy it, and check it off the list
                 RequiredIngredients.Remove(heldData);
                 Destroy(player.TakeHeldIngredient().gameObject);
 
-                Debug.Log($"Accepted {heldData.ingredientName}! {RequiredIngredients.Count} remaining.");
+                UpdateOrderUI();
 
-                // 3. Is the order fully complete?
                 if (RequiredIngredients.Count == 0)
                 {
                     CompleteOrder();
@@ -74,14 +94,86 @@ namespace YesChef.Stations
                 return true;
             }
 
-            return false; // Player is holding something we don't want
+            return false;
         }
 
         private void CompleteOrder()
         {
             HasActiveOrder = false;
-            // Shout out to the Event Bus that we finished!
+
+            var timePenalty = Mathf.FloorToInt(TimeActive);
+            var finalScore = totalBaseScore - timePenalty;
+
+            ShowScorePopupAsync(finalScore);
+
+            orderListText.text = "Order Complete!";
+            orderTimerText.text = "";
+
             GameEvents.OnOrderCompleted?.Invoke(this, totalBaseScore, TimeActive);
+        }
+
+        private void UpdateOrderUI()
+        {
+            if (RequiredIngredients.Count == 0) return;
+
+            var sb = new StringBuilder();
+
+            var itemCounts = new Dictionary<string, int>();
+            foreach (var item in RequiredIngredients)
+            {
+                if (itemCounts.ContainsKey(item.ingredientName))
+                {
+                    itemCounts[item.ingredientName]++;
+                }
+                else
+                {
+                    itemCounts[item.ingredientName] = 1;
+                }
+            }
+
+            foreach (var kvp in itemCounts)
+            {
+                sb.AppendLine($"- {kvp.Key} (x{kvp.Value})");
+            }
+
+            orderListText.text = sb.ToString();
+        }
+
+        private async void ShowScorePopupAsync(int score)
+        {
+            scorePopupText.gameObject.SetActive(true);
+
+            scorePopupText.text = score >= 0 ? $"<color=green>+{score}</color>" : $"<color=red>{score}</color>";
+
+            var originalColor = scorePopupText.color;
+
+            var duration = _scoreDuration;
+            var timer = 0f;
+
+            var startPos = defaultPopupLocalPos;
+            var endPos = defaultPopupLocalPos + Vector3.up * 1.5f;
+
+            while (timer < duration)
+            {
+                timer += Time.deltaTime;
+                var progress = timer / duration;
+
+                scorePopupText.transform.localPosition = Vector3.Lerp(startPos, endPos, progress);
+
+                var fadeColor = scorePopupText.color;
+                fadeColor.a = Mathf.Lerp(originalColor.a, 0f, progress);
+                scorePopupText.color = fadeColor;
+
+                await Awaitable.NextFrameAsync(destroyCancellationToken);
+            }
+
+            if (scorePopupText != null)
+            {
+                scorePopupText.text = "";
+                scorePopupText.color = originalColor;
+                scorePopupText.transform.localPosition = defaultPopupLocalPos;
+                scorePopupText.gameObject.SetActive(false);
+            }
         }
     }
 }

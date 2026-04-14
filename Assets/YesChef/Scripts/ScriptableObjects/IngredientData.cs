@@ -15,10 +15,6 @@ namespace YesChef.Data
         Prepped
     }
 
-    /// <summary>
-    /// ScriptableObject defining the core properties of our ingredients.
-    /// This allows designers to tweak scores and times without touching code.
-    /// </summary>
     [CreateAssetMenu(fileName = "New Ingredient", menuName = "YesChef/Ingredient")]
     public class IngredientData : ScriptableObject
     {
@@ -29,8 +25,7 @@ namespace YesChef.Data
         public bool requiresPrep;
         public float prepTime;
 
-        [Header("Visuals (Fallback)")] [Tooltip("Used to change the color of our primitive shapes based on state.")]
-        public Color rawColor = Color.white;
+        [Header("Visuals (Fallback)")] public Color rawColor = Color.white;
 
         public Color preppedColor = Color.green;
     }

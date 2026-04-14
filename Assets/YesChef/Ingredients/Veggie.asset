@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ingredientName: Veggie
   type: 0
-  baseScore: 10
+  baseScore: 20
   requiresPrep: 1
   prepTime: 2
   rawColor: {r: 0.23111936, g: 0.9339623, b: 0.09251513, a: 1}

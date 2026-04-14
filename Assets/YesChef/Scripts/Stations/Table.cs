@@ -1,4 +1,6 @@
 using System;
+using System.Text;
+using TMPro;
 using UnityEngine;
 using YesChef.Core;
 using YesChef.Player;
@@ -11,12 +13,13 @@ namespace YesChef.Stations
         [Header("Table Settings")] [SerializeField]
         private Transform placementPoint;
 
+        [SerializeField] private TMP_Text timerTxt;
+
         private Ingredient currentIngredient;
         private bool isProcessing;
 
         public bool TryInteract(PlayerInteractor player)
         {
-            // 1. If player has RAW VEGETABLE and table is empty -> PLACE & CHOP
             if (currentIngredient == null && player.HeldIngredient != null)
             {
                 if (player.HeldIngredient.Data.type == IngredientType.Vegetable && player.HeldIngredient.CurrentState == IngredientState.Raw)
@@ -26,12 +29,11 @@ namespace YesChef.Stations
                     currentIngredient.transform.localPosition = Vector3.zero;
                     currentIngredient.transform.localRotation = Quaternion.identity;
 
-                    ProcessIngredientAsync(); // Fire-and-forget async timer
+                    ProcessIngredientAsync();
                     return true;
                 }
             }
 
-            // 2. If table has PREPPED VEGETABLE and player is empty -> TAKE
             if (currentIngredient != null && !isProcessing && player.HeldIngredient == null)
             {
                 if (currentIngredient.CurrentState == IngredientState.Prepped)
@@ -42,7 +44,7 @@ namespace YesChef.Stations
                 }
             }
 
-            return false; // Invalid interaction
+            return false;
         }
 
         private async void ProcessIngredientAsync()
@@ -50,31 +52,23 @@ namespace YesChef.Stations
             isProcessing = true;
             var timer = 0f;
             var prepTime = currentIngredient.Data.prepTime;
+            var sb = new StringBuilder();
+            Debug.Log($"chopping {currentIngredient.Data.ingredientName}");
 
-            Debug.Log($"Started chopping {currentIngredient.Data.ingredientName}...");
-
-            try
+            while (timer < prepTime)
             {
-                while (timer < prepTime)
-                {
-                    timer += Time.deltaTime;
-                    // TODO: Update UI progress bar here in Phase 3
+                timer += Time.deltaTime;
+                sb.AppendFormat("{0:0.0}s", prepTime - timer);
+                timerTxt.text = sb.ToString();
+                sb.Clear();
 
-                    // Unity 6 safe await! Automatically cancels if the station is destroyed
-                    await Awaitable.NextFrameAsync(destroyCancellationToken);
-                }
+                await Awaitable.NextFrameAsync(destroyCancellationToken);
+            }
 
-                currentIngredient.SetState(IngredientState.Prepped);
-                Debug.Log($"Finished chopping {currentIngredient.Data.ingredientName}!");
-            }
-            catch (OperationCanceledException)
-            {
-                // Station was destroyed or play mode stopped, exit cleanly without errors
-            }
-            finally
-            {
-                isProcessing = false;
-            }
+            currentIngredient.SetState(IngredientState.Prepped);
+            Debug.Log($"done {currentIngredient.Data.ingredientName} is ready.");
+
+            isProcessing = false;
         }
     }
 }

@@ -39,21 +39,17 @@ namespace YesChef.Player
 
         private void HandleMovement()
         {
-            // Read input from Unity's modern Input System
             var input = moveAction.action.ReadValue<Vector2>();
             movementVector = new Vector3(input.x, 0f, input.y).normalized;
 
-            // Apply movement
             characterController.Move(movementVector * (moveSpeed * Time.deltaTime));
 
-            // Handle Rotation to face movement direction
             if (movementVector != Vector3.zero)
             {
                 var targetRotation = Quaternion.LookRotation(movementVector);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
             }
 
-            // Keep player grounded simply
             if (!characterController.isGrounded)
             {
                 characterController.Move(Vector3.down * (9.81f * Time.deltaTime));

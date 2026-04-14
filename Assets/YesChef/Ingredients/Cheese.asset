@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ingredientName: Cheese
   type: 1
-  baseScore: 20
-  requiresPrep: 1
-  prepTime: 3
+  baseScore: 10
+  requiresPrep: 0
+  prepTime: 0
   rawColor: {r: 1, g: 1, b: 1, a: 1}
   preppedColor: {r: 0.9601507, g: 1, b: 0, a: 1}

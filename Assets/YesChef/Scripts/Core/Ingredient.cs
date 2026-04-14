@@ -26,7 +26,6 @@ namespace YesChef.Core
         {
             if (meshRenderer != null && Data != null)
             {
-                // Simple visual feedback using Primitive colors as requested by the test parameters
                 meshRenderer.material.color = CurrentState == IngredientState.Raw ? Data.rawColor : Data.preppedColor;
             }
         }
